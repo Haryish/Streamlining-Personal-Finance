@@ -1,0 +1,29 @@
+@startuml base-app
+left to right direction
+
+actor "User"
+actor "Admin"
+
+Database "Transaction Database" as txn
+Database "User Database" as us
+
+rectangle "Base Expense Tracking System" {
+    User --> (Login and Registration)
+    User --> (Dashboard) : Visualize Data
+    User --> (Manual Entry) : Add Transaction
+    User --> (View Transaction) : Specify Date Range
+    User --> (Profile) : Customize Profile
+    (Manual Entry) --> txn : Store Entry
+    (View Transaction) --> txn : Fetch Data
+    (Dashboard) --> txn : Update Visualization
+    
+    package "Admin Module" {
+        Admin --> (Delete User Accounts)
+        Admin --> (Access User Records)
+        (Delete User Accounts) <-- us 
+    }
+}
+
+
+us <..> txn : Direct Mapping
+@enduml

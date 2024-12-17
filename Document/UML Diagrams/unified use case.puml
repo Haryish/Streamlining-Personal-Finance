@@ -1,0 +1,44 @@
+@startuml unified
+left to right direction
+
+actor "User"
+actor "Merchant Retailer" as Merchant
+actor "Email Bot" as Em
+actor "Admin"
+
+Database "Transaction Database" as txn
+Database "User Database" as us
+
+rectangle "Base Expense Tracking System" {
+    User --> (Login and Registration)
+    User --> (Dashboard) : Visualize Data
+    User --> (Manual Entry) : Add Transaction
+    User --> (View Transaction) : Specify Date Range
+    User --> (Profile) : Customize Profile
+    (Manual Entry) --> txn : Store Entry
+    (View Transaction) --> txn : Fetch Data
+    (Dashboard) --> txn : Update Visualization
+    package "Admin Module" {
+        Admin --> (Delete User Accounts)
+        Admin --> (Access User Records)
+        (Delete User Accounts) <-- us 
+    }   
+}
+
+rectangle "Online Ecom Transaction Interface" {
+    Merchant -down-> (Enter Transaction Details)
+    (Enter Transaction Details) -down-> (Authenticate Customer)
+    (Authenticate Customer) --> us : Authenticate with Credentials
+    (Enter Transaction Details) -down-> (Transaction Payload Creation) : Mocked System
+    (Transaction Payload Creation) .. User : Users net banking
+}
+
+package "Email Integeration System"{
+    (Authenticate Customer) --> (Sends Email) : On success transaction
+    (Sends Email) --> (Filters Transaction Data)
+    Em --> (Sends Email): Automates sending emails
+    
+}
+
+us <..> txn : Direct Mapping
+@enduml
