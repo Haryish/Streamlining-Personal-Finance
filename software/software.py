@@ -15,7 +15,7 @@ class AddMoneyApp(QWidget):
 
         # Set up main window
         self.setWindowTitle('Add Expenses Form')
-        self.setGeometry(100, 100, 600, 200)
+        self.setGeometry(100, 100, 600, 250)
 
         # Set up the main layout
         self.layout = QVBoxLayout(self)
@@ -46,8 +46,8 @@ class AddMoneyApp(QWidget):
         login_widget = QWidget()
         layout = QVBoxLayout()
 
-        self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Username")
+        self.customer_name_input = QLineEdit()
+        self.customer_name_input.setPlaceholderText("Customer Name")  # Change placeholder text
         self.password_input = QLineEdit()
         self.password_input.setPlaceholderText("Password")
         self.password_input.setEchoMode(QLineEdit.Password)
@@ -55,11 +55,15 @@ class AddMoneyApp(QWidget):
         login_button = QPushButton('Login')
         login_button.clicked.connect(self.login)
 
+        back_button = QPushButton('Back')  # Add back button
+        back_button.clicked.connect(self.back_to_main)
+
         self.login_response_label = QLabel()
 
-        layout.addWidget(self.username_input)
+        layout.addWidget(self.customer_name_input)
         layout.addWidget(self.password_input)
         layout.addWidget(login_button)
+        layout.addWidget(back_button)  # Add back button to layout
         layout.addWidget(self.login_response_label)
 
         login_widget.setLayout(layout)
@@ -74,8 +78,16 @@ class AddMoneyApp(QWidget):
         form_layout = QFormLayout()
 
         self.add_money_combo = QComboBox()
-        self.add_money_combo.addItems(["Expense"])
+        self.add_money_combo.addItems(["Expense", "Expense Refund"])  # Add "Expense Refund" option
         form_layout.addRow('Add Type:', self.add_money_combo)
+
+        self.merchant_name_input = QLineEdit()  # Merchant name input field
+        self.merchant_name_input.setPlaceholderText("Merchant Name")
+        form_layout.addRow('Merchant Name:', self.merchant_name_input)
+
+        self.item_name_input = QLineEdit()  # Item name input field
+        self.item_name_input.setPlaceholderText("Item Name")
+        form_layout.addRow('Item Name:', self.item_name_input)
 
         self.category_combo = QComboBox()
         self.category_combo.addItems(["Food", "Travel", "Shopping", "Necessities", "Entertainment", "Other"])
@@ -103,7 +115,6 @@ class AddMoneyApp(QWidget):
         logout_button = QPushButton('Logout')
         logout_button.clicked.connect(self.logout)
 
-
         main_widget.setLayout(layout)
         return main_widget
 
@@ -114,6 +125,8 @@ class AddMoneyApp(QWidget):
         category = self.category_combo.currentText()
         quantity = self.quantity_input.text()
         date = self.date_input.date().toString("yyyy-MM-dd")
+        merchant_name = self.merchant_name_input.text()
+        item_name = self.item_name_input.text()
 
         # Validate the quantity input
         if not quantity:
@@ -134,6 +147,8 @@ class AddMoneyApp(QWidget):
             "quantity": quantity,
             "Date": date,
             "Category": category,
+            "merchant_name": merchant_name,
+            "item_name": item_name,
         }
 
         # Switch to login page for login
@@ -141,17 +156,17 @@ class AddMoneyApp(QWidget):
 
     def login(self):
         """ Handle user login """
-        username = self.username_input.text()
+        customer_name = self.customer_name_input.text()
         password = self.password_input.text()
 
-        if not username or not password:
-            self.login_response_label.setText("Please enter username and password.")
+        if not customer_name or not password:
+            self.login_response_label.setText("Please enter customer name and password.")
             self.login_response_label.setStyleSheet("color: red")
             return
 
         # Send login request to Django backend
         data = {
-            'username': username,
+            'username': customer_name,
             'password': password
         }
         try:
@@ -195,6 +210,9 @@ class AddMoneyApp(QWidget):
             if response.status_code == 201:
                 self.response_label.setText("Transaction posted successfully!")
                 self.response_label.setStyleSheet("color: green")
+                
+                # Prepare and send the email after successful submission
+                self.send_email(data['item_name'], data['quantity'], data['merchant_name'])
             else:
                 self.response_label.setText(f"Failed to post transaction. Status: {response.status_code}")
                 self.response_label.setStyleSheet("color: red")
@@ -203,13 +221,33 @@ class AddMoneyApp(QWidget):
             self.response_label.setText(f"Error occurred: {e}")
             self.response_label.setStyleSheet("color: red")
 
+    def send_email(self, item_name, amount, merchant_name):
+        """ Send a confirmation email after successful transaction """
+        email_body = f"""
+        Hi {self.customer_name_input.text()},
+        
+        Thank you for purchasing {item_name} from us!! We successfully debited with {amount} from your account.
+        
+        Details:
+        Add Type: {self.add_money_data["add_money"]}
+        Category: {self.add_money_data["Category"]}
+        Amount: {self.add_money_data["quantity"]}
+        Date: {self.add_money_data["Date"]}
+        
+        Regards,
+        {merchant_name} Team
+        """
+
+        # Send the email (you can replace this with actual email sending logic)
+        print("Sending email with body:\n", email_body)
+
     def logout(self):
         """ Handle logout functionality """
         # Clear the user session data
         self.user_id = None
 
         # Clear all fields
-        self.username_input.clear()
+        self.customer_name_input.clear()
         self.password_input.clear()
 
         # Switch back to the login page
@@ -219,6 +257,10 @@ class AddMoneyApp(QWidget):
         # Optionally display a logout message
         self.response_label.setText("Logged out successfully.")
         self.response_label.setStyleSheet("color: blue")
+
+    def back_to_main(self):
+        """ Go back to the Add Money form page """
+        self.stacked_layout.setCurrentWidget(self.main_page)
 
 
 def main():
