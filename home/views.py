@@ -22,6 +22,10 @@ from rest_framework.authtoken.models import Token
 from django.utils.timezone import now
 from datetime import timedelta
 import plotly.graph_objects as go
+from .forms import MonthSelectionForm
+from django.contrib import messages
+from django.contrib.auth import authenticate, login as dj_login
+
 
 @api_view(['POST'])
 def log_in(request):
@@ -225,6 +229,7 @@ def handleSignup(request):
             user.email = email
             # profile = UserProfile.objects.all()
 
+            #user.set_password(User.cleaned_data['password'])
             user.save()
             # p1=profile.save(commit=False)
             profile.user = user
@@ -236,22 +241,28 @@ def handleSignup(request):
     return redirect('/login')
 
 def handlelogin(request):
-    if request.method =='POST':
-        # get the post parameters
+    if request.method == 'POST':
+        # Get the post parameters
         loginuname = request.POST["loginuname"]
-        loginpassword1=request.POST["loginpassword1"]
+        loginpassword1 = request.POST["loginpassword1"]
+        
+        # Try to authenticate the user
         user = authenticate(username=loginuname, password=loginpassword1)
+        
         if user is not None:
+            # If authentication is successful, log the user in
             dj_login(request, user)
             request.session['is_logged'] = True
-            user = request.user.id 
-            request.session["user_id"] = user
-            messages.success(request, " Successfully logged in")
+            request.session["user_id"] = user.id  # Store the user ID in session
+            messages.success(request, "Successfully logged in")
             return redirect('/index')
         else:
-            messages.error(request," Invalid Credentials, Please try again")  
-            return redirect("/")  
-    return HttpResponse('404-not found')
+            # If authentication fails, show an error message
+            messages.error(request, "Invalid credentials, please try again.")
+            return redirect("/")  # Redirect back to the login page
+    
+    return HttpResponse('404 - NOT FOUND')
+
 def handleLogout(request):
         del request.session['is_logged']
         del request.session["user_id"] 
@@ -395,33 +406,80 @@ def expense_month(request):
 
 
 def stats(request):
-    if request.session.has_key('is_logged'):
-        todays_date = datetime.date.today()
-        one_month_ago = todays_date-datetime.timedelta(days=30)
-        user_id = request.session["user_id"]
-        user1 = User.objects.get(id=user_id)
-        addmoney_info = Addmoney_info.objects.filter(user = user1,Date__gte=one_month_ago,Date__lte=todays_date)
-        addmoney_info1 = Addmoney_info1.objects.filter(user = user1,Date__gte=one_month_ago,Date__lte=todays_date)
-        sum = 0 
-        for i in addmoney_info:
-            if i.add_money == 'Expense':
-                sum=sum+i.quantity
-        addmoney_info.sum = sum
-        sum1 = 0 
-        for i in addmoney_info1:
-            if i.add_money == 'Income':
-                sum1 =sum1+i.quantity
-        addmoney_info.sum1 = sum1
-        x= user1.userprofile.Savings+addmoney_info.sum1 - addmoney_info.sum
-        y= user1.userprofile.Savings+addmoney_info.sum1 - addmoney_info.sum
-        if x<0:
-            messages.warning(request,'Your expenses exceeded your savings')
-            x = 0
-        if x>0:
-            y = 0
-        addmoney_info.x = abs(x)
-        addmoney_info.y = abs(y)
-        return render(request,'home/stats.html',{'addmoney':addmoney_info})
+    # if request.session.has_key('is_logged'):
+    #     todays_date = datetime.date.today()
+    #     one_month_ago = todays_date-datetime.timedelta(days=30)
+    #     user_id = request.session["user_id"]
+    #     user1 = User.objects.get(id=user_id)
+    #     addmoney_info = Addmoney_info.objects.filter(user = user1,Date__gte=one_month_ago,Date__lte=todays_date)
+    #     sum = 0 
+    #     for i in addmoney_info:
+    #         if i.add_money == 'Expense':
+    #             sum=sum+i.quantity
+    #     addmoney_info.sum = sum
+    #     sum1 = 0 
+    #     for i in addmoney_info:
+    #         if i.add_money == 'Income':
+    #             sum1 =sum1+i.quantity
+    #     addmoney_info.sum1 = sum1
+    #     x= user1.userprofile.Savings+addmoney_info.sum1 - addmoney_info.sum
+    #     y= user1.userprofile.Savings+addmoney_info.sum1 - addmoney_info.sum
+    #     if x<0:
+    #         messages.warning(request,'Your expenses exceeded your savings')
+    #         x = 0
+    #     if x>0:
+    #         y = 0
+    #     addmoney_info.x = abs(x)
+    #     addmoney_info.y = abs(y)
+    
+    # Initialize the form with GET data if available
+    # Initialize the form with GET data if available
+    form = MonthSelectionForm(request.GET or None)
+    
+    # Initialize variables for the chart and month display
+    graph1_html = None
+    month_name = None
+
+    if form.is_valid():
+        # Get the selected month and year (current year)
+        selected_month = form.cleaned_data['month']
+        year = now().year
+        
+        # Get the start date of the selected month
+        start_date = f'{year}-{selected_month}-01'
+        
+        # Calculate the end date of the selected month
+        if selected_month == '12':
+            end_date = f'{year + 1}-01-01'  # Next year if December
+        else:
+            next_month = int(selected_month) + 1
+            end_date = f'{year}-{next_month:02d}-01'
+        
+        # Query the database for expenses within the selected month
+        expenses = Addmoney_info.objects.filter(Date__gte=start_date, Date__lt=end_date)
+        
+        # Aggregate expenses by category
+        category_expenses = expenses.values('Category').annotate(total_expense=Sum('quantity'))
+        
+        # Extract categories and amounts for the pie chart
+        categories = [expense['Category'] for expense in category_expenses]
+        amounts = [expense['total_expense'] for expense in category_expenses]
+        
+        # Generate the Plotly pie chart
+        fig = go.Figure(data=[go.Pie(labels=categories, values=amounts, hole=0.3)])
+        fig.update_traces(textinfo='percent+label')
+        
+        # Convert the figure to HTML
+        graph1_html = fig.to_html(full_html=False)
+        
+        # Find the month name from MONTH_CHOICES
+        month_name_dict = dict(MonthSelectionForm.MONTH_CHOICES)  # Create a dict from the choices
+        month_name = month_name_dict.get(selected_month)  # Get the name of the month
+
+    return render(request,'home/stats.html',{
+        'form': form, 
+        'graph1_html': graph1_html, 
+        'month_name': month_name})
 
 def expense_week(request):
     todays_date = datetime.date.today()
@@ -449,32 +507,55 @@ def expense_week(request):
     return JsonResponse({'expense_category_data': finalrep}, safe=False)
 
 def weekly(request):
-    if request.session.has_key('is_logged'):
-        todays_date = datetime.date.today()
-        one_week_ago = todays_date-datetime.timedelta(days=7)
-        user_id = request.session["user_id"]
-        user1 = User.objects.get(id=user_id)
-        addmoney_info = Addmoney_info.objects.filter(user = user1,Date__gte=one_week_ago,Date__lte=todays_date)
-        sum = 0
-        for i in addmoney_info:
-            if i.add_money == 'Expense':
-                sum=sum+i.quantity
-        addmoney_info.sum = sum
-        sum1 = 0
-        for i in addmoney_info:
-            if i.add_money == 'Income':
-                sum1 =sum1+i.quantity
-        addmoney_info.sum1 = sum1
-        x= user1.userprofile.Savings+addmoney_info.sum1 - addmoney_info.sum
-        y= user1.userprofile.Savings+addmoney_info.sum1 - addmoney_info.sum
-        if x<0:
-            messages.warning(request,'Your expenses exceeded your savings')
-            x = 0
-        if x>0:
-            y = 0
-        addmoney_info.x = abs(x)
-        addmoney_info.y = abs(y)
-    return render(request,'home/weekly.html',{'addmoney_info':addmoney_info})
+    # if request.session.has_key('is_logged'):
+    #     todays_date = datetime.date.today()
+    #     one_week_ago = todays_date-datetime.timedelta(days=7)
+    #     user_id = request.session["user_id"]
+    #     user1 = User.objects.get(id=user_id)
+    #     addmoney_info = Addmoney_info.objects.filter(user = user1,Date__gte=one_week_ago,Date__lte=todays_date)
+    #     sum = 0
+    #     for i in addmoney_info:
+    #         if i.add_money == 'Expense':
+    #             sum=sum+i.quantity
+    #     addmoney_info.sum = sum
+    #     sum1 = 0
+    #     for i in addmoney_info:
+    #         if i.add_money == 'Income':
+    #             sum1 =sum1+i.quantity
+    #     addmoney_info.sum1 = sum1
+    #     x= user1.userprofile.Savings+addmoney_info.sum1 - addmoney_info.sum
+    #     y= user1.userprofile.Savings+addmoney_info.sum1 - addmoney_info.sum
+    #     if x<0:
+    #         messages.warning(request,'Your expenses exceeded your savings')
+    #         x = 0
+    #     if x>0:
+    #         y = 0
+    #     addmoney_info.x = abs(x)
+    #     addmoney_info.y = abs(y)
+    
+    today = now().date()
+    
+    # Get the start of the current week (assuming Sunday is the first day of the week)
+    start_date = today - timedelta(days=today.weekday())
+    
+    # Query the database for expenses within the current week
+    expenses = Addmoney_info.objects.filter(Date__gte=start_date, Date__lte=today)
+    
+    # Aggregate expenses by category
+    category_expenses = expenses.values('Category').annotate(total_expense=Sum('quantity'))
+
+    # Extract categories and amounts
+    categories = [expense['Category'] for expense in category_expenses]
+    amounts = [expense['total_expense'] for expense in category_expenses]
+
+    # Create a Plotly pie chart
+    fig = go.Figure(data=[go.Pie(labels=categories, values=amounts, hole=0.3)])
+    fig.update_traces(textinfo='percent+label')
+
+    # Convert the plotly figure to HTML
+    graph1_html = fig.to_html(full_html=False)
+
+    return render(request,'home/weekly.html',{'graph1_html':graph1_html})
 
 def check(request):
     if request.method == 'POST':

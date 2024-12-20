@@ -1,13 +1,9 @@
 {% extends 'base.html' %}
-{% block body  %}
-{%  load static %}
+{% block body %}
+{% load static %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-<<<<<<< HEAD
 <div class="card-header"><h3 class="text-center font-weight-light my-4">Expense Tracker Application</h3></div>
-=======
-<div class="card-header"><h3 class="text-center font-weight-light my-4">Personal Financial Assistant Application</h3></div>
->>>>>>> b3dca27a3ae88f8a34cbd4564bf5085be083ce3d
 <div class="card-body">
     <div class="row">
         <div class="col-md-6">
@@ -17,38 +13,43 @@
             <br>
             <h3 class="text-center font-weight-light my-4">Login</h3>
             <br>
+
             <form class="container" action='/handlelogin/' method='post'>
                 {% csrf_token %}
                 <div class="form-group">
-                    
-                <label class="small mb-1" for="loginuname">Username</label>
-                <input class="form-control shadow-none" id="loginuname" name="loginuname" type="text" placeholder="Enter user name" required/>
+                    <label class="small mb-1" for="loginuname">Username</label>
+                    <input class="form-control shadow-none" id="loginuname" name="loginuname" type="text" placeholder="Enter user name" required/>
                 </div>
                 <div class="form-group py-4">
-                <label class="small mb-1" for="loginpassword1">Password</label>
-                <input class="form-control shadow-none" id="loginpassword1" name="loginpassword1" type="password" placeholder="Enter password" required/>
-
-            </div>
-                <div class="form-group">
-                <div class="custom-control custom-checkbox">
-                    <br>
+                    <label class="small mb-1" for="loginpassword1">Password</label>
+                    <input class="form-control shadow-none" id="loginpassword1" name="loginpassword1" type="password" placeholder="Enter password" required/>
                 </div>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <br>
+                    </div>
                 </div>
                 <div class="form-group d-flex align-items-center justify-content-between mt-4 mb-0">
-                <div class="btnn">
-                <button type="submit" class="btn btn-success">Login</button><br>
-                                                        </div>
-                                                        <div  class="link">
-
-                <a href="/register">Need an account? Sign up!</a>
+                    <div class="btnn">
+                        <button type="submit" class="btn btn-success">Login</button><br>
+                    </div>
+                    <div class="link">
+                        <a href="/register">Need an account? Sign up!</a>
+                    </div>
                 </div>
+            </form>
+            <!-- Display any messages here -->
+            {% if messages %}
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        {% for message in messages %}
+                            <li>{{ message }}</li>
+                        {% endfor %}
+                    </ul>
                 </div>
-                </div>
-                </form>
+            {% endif %}
         </div>
     </div>
-
 </div>
 
-
-  {% endblock body %}
+{% endblock body %}

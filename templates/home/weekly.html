@@ -95,45 +95,8 @@
                 </nav>
             </div>
             <div id="layoutSidenav_content">
-                <main>
-                    <div class="container-fluid">
-                        <h1 class="mt-4">Weekly Expense</h1>
-                        <ol class="breadcrumb mb-4">
-                            <li class="breadcrumb-item"><a href="/index">Dashboard</a></li>
-                            <li class="breadcrumb-item active">Charts</li>
-                        </ol>
-                                    </div>
-                            <div class="row">
-                                <div class="col-lg-1"></div>
-                            <div class="col-lg-5">
-    
-                                <div class=" mb-4">
-                                    <div class="">
-                                        <i class="fas fa-chart-pie mr-1"></i>
-                                        Weekly Expense
-                                    </div>
-                                    <div class="container"style="width:100%;">
-                                    <div class="card-body"><canvas id="myChart" width="400" height="400"></canvas></div>
-                                </div>
-                                </div>
-                                </div>
-                                <div class="col-lg-5">
-                                    <br><br>
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-chart-pie mr-1"></i>
-                                        Weekly Expense
-                                    </div>
-                                    <div class="card-body">
-                                  <p> Amount spent this week : ₹ {{addmoney_info.sum}}</p>
-                                  <p> Amount saved : ₹ {{addmoney_info.x}}</p>
 
-                            </div>
-                        </div>
-                    </div>
-                    </div>
-                </main>
-
+                {{graph1_html|safe}}
 <script src="{% static 'javascript/weekly.js'%}"></script>
 <script type="text/javascript" src="http://code.jquery.com/jquery-latest.js"></script>
       <script type="text/javascript">

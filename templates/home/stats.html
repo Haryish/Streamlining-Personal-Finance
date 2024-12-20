@@ -105,48 +105,23 @@
                 </nav>
             </div>
             <div id="layoutSidenav_content">
+<br>
+            <div style='text-align:center '>
+                <form  method="get">
+                    {{ form.as_p }}
+                    <button class='btn btn-success' type="submit">Submit</button>
+                </form>
+            </div>          
+  
+            {% if graph1_html %}
+            <!-- Display the Plotly pie chart -->
+            <h2>Expenses for {{ month_name }}:</h2>
+            <div>
+                {{ graph1_html|safe }}
+            </div>
 
-                <main>
-                    <div class="container-fluid">
-                        <h1 class="mt-4">Monthly Expense</h1>
-                        <ol class="breadcrumb mb-4">
-                            <li class="breadcrumb-item"><a href="/index">Dashboard</a></li>
-                            <li class="breadcrumb-item active">Charts</li>
-                        </ol>
-                                    </div>
-                            <div class="row">
-                                <div class="col-lg-1"></div>
-                            <div class="col-lg-5">
-                                <div class=" mb-4">
-                                    <div class="">
-                                        <i class="fas fa-chart-pie mr-1"></i>
-                                        Monthly Expense
-                                    </div>
-                                    <div class="container"style="width:100%;">
-                                    <div class="card-body"><canvas id="myChart" width="400" height="400"></canvas></div>
-                                </div>
-                                </div>
-                            </div>
-                            <div class="col-lg-5 ">
-                                <br><br>
-                                <div class="card mb-4">
-                                    <div class="card-header">
-                                        <i class="fas fa-chart-bar mr-1"></i>
-                                        Monthly Record
-                                    </div>
-                                    <div class="card-body">
-                                    <p> Amount to be saved : ₹ {{ user.userprofile.Savings }}</p>
-                                    <p> Amount spent : ₹ {{addmoney.sum}}</p>
-                                    <p> Amount saved : ₹ {{addmoney.x}}</p>
-                                    <p> Amount spent more than that should be saved : ₹ {{addmoney.y}}</p>
-                                   
-                                    </div>
-                                </div>
-                            </div>
-                            </div>
-                        </div>
-                    </div>
-                </main>
+        {% endif %}
+
 <script src="{% static 'javascript/stats.js'%}"></script>
 </body>
 <script>
